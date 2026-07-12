@@ -122,7 +122,7 @@ export async function searchSongs(query) {
   return songs.slice(0, 30)
 }
 
-/** Language id â†’ home recommendation seeds */
+/** Language id → home recommendation seeds */
 const LANG_HOME = {
   en: { name: 'English', seeds: ['top english pop songs', 'english hits official audio'] },
   hi: { name: 'Hindi', seeds: ['bollywood hits songs', 'hindi songs official'] },
@@ -136,11 +136,11 @@ const LANG_HOME = {
   ko: { name: 'Korean', seeds: ['kpop hits songs', 'korean songs official'] },
   ja: { name: 'Japanese', seeds: ['jpop hits songs', 'japanese songs official'] },
   ar: { name: 'Arabic', seeds: ['arabic hits songs', 'arabic pop songs'] },
-  fr: { name: 'French', seeds: ['french pop hits', 'chansons franÃ§aises'] },
+  fr: { name: 'French', seeds: ['french pop hits', 'chansons françaises'] },
   pt: { name: 'Portuguese', seeds: ['brazilian funk hits', 'mpb hits brasil'] },
   de: { name: 'German', seeds: ['german pop hits', 'deutsche lieder hits'] },
   it: { name: 'Italian', seeds: ['italian pop hits', 'canzoni italiane'] },
-  tr: { name: 'Turkish', seeds: ['turkish pop hits', 'tÃ¼rkÃ§e ÅŸarkÄ±lar'] },
+  tr: { name: 'Turkish', seeds: ['turkish pop hits', 'türkçe şarkılar'] },
   zh: { name: 'Chinese', seeds: ['c-pop hits', 'mandarin songs popular'] },
 }
 
@@ -161,11 +161,11 @@ export async function getHomeShelves(langIds = []) {
         const songs = await searchSongs(q)
         if (songs.length) {
           shelves.push({
-            title: `For you Â· ${cfg.name}`,
+            title: `For you · ${cfg.name}`,
             songs: songs.slice(0, 12),
           })
         }
-        // Second shelf per language if only 1â€“2 langs selected
+        // Second shelf per language if only 1–2 langs selected
         if (langs.length <= 2 && cfg.seeds[1]) {
           const more = await searchSongs(cfg.seeds[1])
           if (more.length) {
@@ -316,7 +316,7 @@ export async function getStreamUrl(videoId) {
     console.warn('[Melocix] yt-dlp failed, trying youtubei', err?.message || err)
   }
 
-  // Fallback: youtubei (often missing URLs without poToken â€” try anyway)
+  // Fallback: youtubei (often missing URLs without poToken — try anyway)
   try {
     const yt = await getClient()
     const info = await yt.getBasicInfo(videoId)

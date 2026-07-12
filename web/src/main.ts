@@ -34,6 +34,7 @@ import {
   playShellEnter,
 } from './animations'
 import type { HomeShelf, LibrarySection, Song } from './types'
+import { SYM } from './uiSymbols'
 
 type Tab = 'home' | 'search' | 'library' | 'you'
 type Theme = 'dark' | 'light' | 'black'
@@ -129,14 +130,14 @@ function formatBytes(n: number): string {
 function emptyState(title: string, message: string): string {
   return `
     <div class="empty">
-      <div class="empty-icon">â™ª</div>
+      <div class="empty-icon">${SYM.note}</div>
       <h2>${escapeHtml(title)}</h2>
       <p>${escapeHtml(message)}</p>
     </div>
   `
 }
 
-function spinner(label = 'Loadingâ€¦'): string {
+function spinner(label = 'Loading' + SYM.ellipsis): string {
   return `
     <div class="center-state">
       <div class="spinner" aria-hidden="true"></div>
@@ -161,11 +162,11 @@ function songActions(song: Song): string {
   return `
     <div class="row-actions" data-stop>
       <button type="button" class="icon-btn ${liked ? 'on' : ''}" data-like="${escapeHtml(song.id)}" title="Like">
-        ${liked ? '♥' : '♡'}
+        ${liked ? SYM.heart : SYM.heartEmpty}
       </button>
-      <button type="button" class="icon-btn" data-add-pl="${escapeHtml(song.id)}" title="Add to playlist">＋</button>
+      <button type="button" class="icon-btn" data-add-pl="${escapeHtml(song.id)}" title="Add to playlist">${SYM.plus}</button>
       <button type="button" class="icon-btn ${saved ? 'on' : ''}" data-offline="${escapeHtml(song.id)}" title="${saved ? 'Remove offline' : 'Save offline'}">
-        ${saving ? `${offlineSavePct}%` : saved ? '↓✓' : '↓'}
+        ${saving ? `${offlineSavePct}%` : saved ? SYM.down + SYM.check : SYM.down}
       </button>
     </div>
   `
@@ -176,8 +177,8 @@ function songCard(song: Song): string {
     <button class="song-card glass" type="button" data-play="${escapeHtml(song.id)}">
       <div class="card-art-wrap">
         <img src="${safeImgSrc(song.cover)}" alt="" loading="lazy" referrerpolicy="no-referrer" />
-        ${library.isLiked(song.id) ? '<span class="card-heart">♥</span>' : ''}
-        ${offlineIds.has(song.id) ? '<span class="card-dl">↓</span>' : ''}
+        ${library.isLiked(song.id) ? '<span class="card-heart">' + SYM.heart + '</span>' : ''}
+        ${offlineIds.has(song.id) ? '<span class="card-dl">' + SYM.down + '</span>' : ''}
       </div>
       <div class="title">${escapeHtml(song.title)}</div>
       <div class="artist">${escapeHtml(song.artist)}</div>
@@ -195,7 +196,7 @@ function songRow(song: Song, extra = ''): string {
           <div class="title">${escapeHtml(song.title)}</div>
           <div class="artist">${escapeHtml(song.artist)}</div>
         </div>
-        ${active && player.isPlaying ? '<span class="eq-dot">â™ª</span>' : ''}
+        ${active && player.isPlaying ? '<span class="eq-dot">' + SYM.note + '</span>' : ''}
       </button>
       ${songActions(song)}
       ${extra}
@@ -205,7 +206,7 @@ function songRow(song: Song, extra = ''): string {
 
 function renderHome(): string {
   let body: string
-  if (homeLoading && !homeShelves.length) body = spinner('Loading recommendations for youâ€¦')
+  if (homeLoading && !homeShelves.length) body = spinner('Loading recommendations for you' + SYM.ellipsis)
   else if (homeError && !homeShelves.length) body = errorState(homeError, 'home')
   else if (!homeShelves.length) body = emptyState('Nothing here yet', 'Search for a song to start listening.')
   else {
@@ -236,7 +237,7 @@ function renderHome(): string {
 function renderSearch(): string {
   let body: string
   if (!searchQuery.trim()) body = emptyState('Search Melocix', 'Find tracks, then like, playlist, or save offline.')
-  else if (searchLoading) body = spinner('Searchingâ€¦')
+  else if (searchLoading) body = spinner('Searching' + SYM.ellipsis)
   else if (searchError) body = errorState(searchError, 'search')
   else if (!searchResults.length) body = emptyState('No matches', 'Try another title or artist.')
   else body = `<div class="song-list">${searchResults.map((s) => songRow(s)).join('')}</div>`
@@ -271,15 +272,15 @@ function renderLibrary(): string {
     const songs = library.likedSongs()
     body = songs.length
       ? `<div class="lib-toolbar">
-          <button type="button" class="btn ghost" data-play-all="liked">â–¶ Play all</button>
+          <button type="button" class="btn ghost" data-play-all="liked">${SYM.play} Play all</button>
         </div>
         <div class="song-list">${songs.map((s) => songRow(s)).join('')}</div>`
-      : emptyState('No liked songs', 'Tap ♡ on any track to save it here.')
+      : emptyState('No liked songs', 'Tap ' + SYM.heartEmpty + ' on any track to save it here.')
   } else if (librarySection === 'history') {
     const entries = library.history()
     body = entries.length
       ? `<div class="lib-toolbar">
-          <button type="button" class="btn ghost" data-play-all="history">â–¶ Play all</button>
+          <button type="button" class="btn ghost" data-play-all="history">${SYM.play} Play all</button>
           <button type="button" class="btn ghost danger" data-clear-history>Clear</button>
         </div>
         <div class="song-list">${entries.map((e) => songRow(e.song)).join('')}</div>`
@@ -290,8 +291,8 @@ function renderLibrary(): string {
       const songs = library.playlistSongs(openPlaylistId)
       body = `
         <div class="lib-toolbar">
-          <button type="button" class="btn ghost" data-back-playlists>â† Back</button>
-          <button type="button" class="btn ghost" data-play-all="playlist:${openPlaylistId}">â–¶ Play all</button>
+          <button type="button" class="btn ghost" data-back-playlists>${SYM.back} Back</button>
+          <button type="button" class="btn ghost" data-play-all="playlist:${openPlaylistId}">${SYM.play} Play all</button>
           <button type="button" class="btn ghost danger" data-delete-pl="${openPlaylistId}">Delete</button>
         </div>
         <h2 class="section-title">${escapeHtml(pl?.name || 'Playlist')}</h2>
@@ -302,17 +303,17 @@ function renderLibrary(): string {
                   (s) =>
                     songRow(
                       s,
-                      `<button type="button" class="icon-btn danger" data-remove-pl-song="${escapeHtml(s.id)}" data-pl="${openPlaylistId}" title="Remove">×</button>`,
+                      `<button type="button" class="icon-btn danger" data-remove-pl-song="${escapeHtml(s.id)}" data-pl="${openPlaylistId}" title="Remove">${SYM.times}</button>`,
                     ),
                 )
                 .join('')}</div>`
-            : emptyState('Empty playlist', 'Add songs with ＋ from search or home.')
+            : emptyState('Empty playlist', 'Add songs with ' + SYM.plus + ' from search or home.')
         }`
     } else {
       const pls = library.playlists()
       body = `
         <div class="lib-toolbar">
-          <button type="button" class="btn" data-create-pl>＋ New playlist</button>
+          <button type="button" class="btn" data-create-pl>${SYM.plus} New playlist</button>
         </div>
         ${
           pls.length
@@ -333,7 +334,7 @@ function renderLibrary(): string {
     }
   } else {
     // offline — rendered async content placeholder; filled after list loads via re-render
-    body = `<div id="offline-body">${spinner('Loading offline libraryâ€¦')}</div>`
+    body = `<div id="offline-body">${spinner('Loading offline library' + SYM.ellipsis)}</div>`
   }
 
   return `
@@ -390,7 +391,7 @@ function renderYou(): string {
     </div>
     <h2 class="section-title" style="margin-top:28px">Music languages</h2>
     <p class="section-hint">
-      Home recommendations use these (1â€“${MAX_LANGS}).
+      Home recommendations use these (1–${MAX_LANGS}).
       ${selectedLangs.length ? `<br/>Current: <strong>${escapeHtml(languagesLabel(selectedLangs))}</strong>` : ''}
     </p>
     <button type="button" class="btn" data-edit-languages>Edit languages</button>
@@ -415,7 +416,7 @@ function onboardingHtml(): string {
     return `
       <div class="onboard">
         <div class="onboard-card glass">
-          <div class="onboard-logo">â™ª</div>
+          <div class="onboard-logo">${SYM.note}</div>
           <h1>Welcome to Melocix</h1>
           <p class="onboard-lead">
             YouTube Music, refined — fast search, offline saves, lyrics, and a player that feels yours.
@@ -457,7 +458,7 @@ function onboardingHtml(): string {
         <h1>${editingLanguages ? 'Music languages' : 'What do you listen to?'}</h1>
         <p class="onboard-lead">
           Choose <strong>at least ${MIN_LANGS}</strong> and up to <strong>${MAX_LANGS}</strong> languages.
-          Weâ€™ll recommend songs based on your picks.
+          We’ll recommend songs based on your picks.
         </p>
         <div class="lang-counter ${canContinue ? 'ok' : ''}">
           ${count} / ${MAX_LANGS} selected
@@ -496,7 +497,7 @@ function miniPlayerHtml(): string {
   if (!song) return `<div class="mini-player skin-${playerSkin}" id="mini"></div>`
   const progress = Math.round(player.progress * 100)
   const liked = library.isLiked(song.id)
-  const playIcon = player.isLoading ? '…' : player.isPlaying ? '❚❚' : '▶'
+  const playIcon = player.isLoading ? SYM.ellipsis : player.isPlaying ? SYM.pause : SYM.play
 
   // Shared controls; layout/skin via CSS classes
   return `
@@ -508,13 +509,13 @@ function miniPlayerHtml(): string {
       </div>
       <div class="mini-meta">
         <div class="title">${escapeHtml(song.title)}</div>
-        <div class="artist">${escapeHtml(song.artist)}${player.isLoading ? ' · loading…' : ''}</div>
+        <div class="artist">${escapeHtml(song.artist)}${player.isLoading ? SYM.middot + 'loading' + SYM.ellipsis : ''}</div>
       </div>
       <div class="mini-controls" data-stop>
-        <button type="button" class="icon-btn ${liked ? 'on' : ''}" data-like="${escapeHtml(song.id)}" title="Like">${liked ? '♥' : '♡'}</button>
-        <button type="button" class="ctrl" data-prev aria-label="Previous">⏮</button>
+        <button type="button" class="icon-btn ${liked ? 'on' : ''}" data-like="${escapeHtml(song.id)}" title="Like">${liked ? SYM.heart : SYM.heartEmpty}</button>
+        <button type="button" class="ctrl" data-prev aria-label="Previous">${SYM.prev}</button>
         <button type="button" class="mini-btn" data-toggle aria-label="Play or pause">${playIcon}</button>
-        <button type="button" class="ctrl" data-next aria-label="Next">⏭</button>
+        <button type="button" class="ctrl" data-next aria-label="Next">${SYM.next}</button>
       </div>
       ${player.lastError ? `<div class="mini-error">${escapeHtml(player.lastError)}</div>` : ''}
     </div>
@@ -529,7 +530,7 @@ function fullPlayerHtml(): string {
   const saved = offlineIds.has(song.id)
   const progress = Math.round(player.progress * 1000)
   const queue = player.queueList
-  const playIcon = player.isLoading ? '…' : player.isPlaying ? '❚❚' : '▶'
+  const playIcon = player.isLoading ? SYM.ellipsis : player.isPlaying ? SYM.pause : SYM.play
 
   const artBlock =
     playerSkin === 'glass'
@@ -552,9 +553,9 @@ function fullPlayerHtml(): string {
       <div class="fp-scrim"></div>
       <div class="fp-inner">
         <header class="fp-header">
-          <button type="button" class="icon-btn glass-btn" data-collapse-player aria-label="Close">×</button>
+          <button type="button" class="icon-btn glass-btn" data-collapse-player aria-label="Close">${SYM.times}</button>
           <div class="fp-now">${playerSkin === 'neon' ? 'NOW PLAYING' : playerSkin === 'soft' ? 'Playing' : 'Now playing'}</div>
-          <button type="button" class="icon-btn glass-btn ${liked ? 'on' : ''}" data-like="${escapeHtml(song.id)}" aria-label="Like">${liked ? '♥' : '♡'}</button>
+          <button type="button" class="icon-btn glass-btn ${liked ? 'on' : ''}" data-like="${escapeHtml(song.id)}" aria-label="Like">${liked ? SYM.heart : SYM.heartEmpty}</button>
         </header>
 
         ${artBlock}
@@ -573,21 +574,21 @@ function fullPlayerHtml(): string {
         </div>
 
         <div class="fp-controls">
-          <button type="button" class="fp-side ${player.shuffleOn ? 'on' : ''}" data-shuffle title="Shuffle">â‡„</button>
-          <button type="button" class="fp-side" data-prev title="Previous">⏮</button>
+          <button type="button" class="fp-side ${player.shuffleOn ? 'on' : ''}" data-shuffle title="Shuffle">⇄</button>
+          <button type="button" class="fp-side" data-prev title="Previous">${SYM.prev}</button>
           <button type="button" class="fp-main" data-toggle title="Play/Pause">${playIcon}</button>
-          <button type="button" class="fp-side" data-next title="Next">⏭</button>
+          <button type="button" class="fp-side" data-next title="Next">${SYM.next}</button>
           <button type="button" class="fp-side ${player.repeatMode !== 'off' ? 'on' : ''}" data-repeat title="Repeat">
-            ${player.repeatMode === 'one' ? '1' : 'âŸ³'}
+            ${player.repeatMode === 'one' ? '1' : '⟳'}
           </button>
         </div>
 
         <div class="fp-extra">
-          <button type="button" class="btn ghost glass-btn ${lyricsShowPanel ? 'on-chip' : ''}" data-toggle-lyrics>♪ Lyrics
+          <button type="button" class="btn ghost glass-btn ${lyricsShowPanel ? 'on-chip' : ''}" data-toggle-lyrics>${SYM.note} Lyrics
           </button>
-          <button type="button" class="btn ghost glass-btn" data-add-pl="${escapeHtml(song.id)}">＋ Playlist</button>
+          <button type="button" class="btn ghost glass-btn" data-add-pl="${escapeHtml(song.id)}">${SYM.plus} Playlist</button>
           <button type="button" class="btn ghost glass-btn" data-offline="${escapeHtml(song.id)}">
-            ${offlineSavingId === song.id ? `Saving ${offlineSavePct}%` : saved ? '↓✓' : '↓'}
+            ${offlineSavingId === song.id ? `Saving ${offlineSavePct}%` : saved ? SYM.down + SYM.check : SYM.down}
           </button>
         </div>
 
@@ -602,7 +603,7 @@ function fullPlayerHtml(): string {
                     .map(
                       (s, i) => `
                     <button type="button" class="fp-queue-item ${i === player.queueIndex ? 'active' : ''}" data-play="${escapeHtml(s.id)}" data-queue-play>
-                      <span class="qi">${i === player.queueIndex ? 'â™ª' : i + 1}</span>
+                      <span class="qi">${i === player.queueIndex ? SYM.note : i + 1}</span>
                       <span class="qt">${escapeHtml(s.title)}</span>
                       <span class="qa">${escapeHtml(s.artist)}</span>
                     </button>`,
@@ -624,11 +625,11 @@ function lyricsPanelHtml(): string {
       <div class="lyrics-panel glass" id="lyrics-panel">
         <div class="lyrics-head">
           <span>Lyrics</span>
-          <span class="lyrics-src">loading…</span>
+          <span class="lyrics-src">loading${SYM.ellipsis}</span>
         </div>
         <div class="lyrics-body lyrics-center">
           <div class="spinner"></div>
-          <p>Fetching from LRCLIBâ€¦</p>
+          <p>Fetching from LRCLIB${SYM.ellipsis}</p>
         </div>
       </div>`
   }
@@ -655,7 +656,7 @@ function lyricsPanelHtml(): string {
         </div>
         <div class="lyrics-body lyrics-center">
           <p>No lyrics found for this track.</p>
-          <p class="muted">Source: LRCLIB · titles with â€œ(Official Video)â€ are cleaned automatically.</p>
+          <p class="muted">Source: LRCLIB · titles with "(Official Video)" are cleaned automatically.</p>
         </div>
       </div>`
   }
@@ -770,7 +771,7 @@ function playlistPickerHtml(): string {
       <div class="modal glass" data-stop>
         <h3>Add to playlist</h3>
         <p class="modal-sub">${escapeHtml(song.title)}</p>
-        <button type="button" class="btn full" data-create-pl-and-add>＋ New playlist</button>
+        <button type="button" class="btn full" data-create-pl-and-add>${SYM.plus} New playlist</button>
         <div class="picker-list">
           ${
             pls.length
@@ -895,10 +896,10 @@ async function fillOfflineSection() {
     host.innerHTML = songs.length
       ? `<div class="lib-toolbar">
           <span class="muted">${songs.length} tracks · ${formatBytes(bytes)}</span>
-          <button type="button" class="btn ghost" data-play-all="offline">â–¶ Play all</button>
+          <button type="button" class="btn ghost" data-play-all="offline">${SYM.play} Play all</button>
         </div>
         <div class="song-list">${songs.map((s) => songRow(s)).join('')}</div>`
-      : emptyState('Nothing offline', 'Tap ↓ on a track to download for offline play.')
+      : emptyState('Nothing offline', 'Tap ' + SYM.down + ' on a track to download for offline play.')
     // re-bind offline list actions
     bindSongActions(host)
     host.querySelector('[data-play-all="offline"]')?.addEventListener('click', () => {
@@ -1354,12 +1355,12 @@ player.subscribe(() => {
     const line = mini.querySelector('.progress-line > span') as HTMLElement | null
     if (title) title.textContent = player.current.title
     if (artist)
-      artist.textContent = `${player.current.artist}${player.isLoading ? ' · loading…' : ''}`
+      artist.textContent = `${player.current.artist}${player.isLoading ? SYM.middot + 'loading' + SYM.ellipsis : ''}`
     if (art) {
       art.setAttribute('src', player.current.cover)
       art.classList.toggle('spin', player.isPlaying)
     }
-    if (toggle) toggle.textContent = player.isLoading ? '…' : player.isPlaying ? '❚❚' : '▶'
+    if (toggle) toggle.textContent = player.isLoading ? SYM.ellipsis : player.isPlaying ? SYM.pause : SYM.play
     if (line) line.style.width = `${Math.round(player.progress * 100)}%`
   }
 
@@ -1369,7 +1370,7 @@ player.subscribe(() => {
     const cur = full.querySelector('[data-cur-time]')
     const dur = full.querySelector('[data-dur-time]')
     const vinyl = full.querySelector('.vinyl-wrap')
-    if (toggle) toggle.textContent = player.isLoading ? '…' : player.isPlaying ? '❚❚' : '▶'
+    if (toggle) toggle.textContent = player.isLoading ? SYM.ellipsis : player.isPlaying ? SYM.pause : SYM.play
     if (cur) cur.textContent = formatTime(player.currentTime)
     if (dur) dur.textContent = formatTime(player.duration)
     if (seek && document.activeElement !== seek) seek.value = String(Math.round(player.progress * 1000))

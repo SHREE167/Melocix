@@ -1,4 +1,4 @@
-﻿# Melocix Web â€” Phase 2
+﻿# Melocix Web — Phase 2
 
 Browser UI + local API for **YouTube Music search & streaming**, plus a local library.
 
@@ -59,6 +59,6 @@ Note: Android package still needs the API reachable (localhost works in emulator
 
 ## Troubleshooting
 
-- **Home/search fails** â€” YouTube may rate-limit or change Innertube; restart `npm run dev`.
-- **Audio fails** â€” Some regions/tracks need different formats; try another song.
-- **API offline** â€” Ensure port 8787 is free; run `npm run server` alone to see errors.
+- **Home/search fails** — YouTube may rate-limit or change Innertube; restart `npm run dev`.
+- **Audio fails** — Some regions/tracks need different formats; try another song.
+- **API offline** — Ensure port 8787 is free; run `npm run server` alone to see errors.

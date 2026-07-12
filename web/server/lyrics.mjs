@@ -1,5 +1,5 @@
 /**
- * Lyrics via LRCLIB (https://lrclib.net) â€” free, no API key.
+ * Lyrics via LRCLIB (https://lrclib.net) — free, no API key.
  * Used by many FOSS players (similar spirit to Metrolist's lrclib module).
  */
 
