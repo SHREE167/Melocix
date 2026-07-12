@@ -181,13 +181,13 @@ a {
 .brand-mark {
   width: 28px;
   height: 28px;
-  border-radius: 8px;
+  border-radius: 3px;
   display: grid;
   place-items: center;
-  background: var(--grad-accent);
+  background: var(--accent);
   color: var(--on-accent);
-  font-size: 0.9rem;
-  box-shadow: 0 6px 16px var(--accent-glow);
+  clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
+  box-shadow: 0 0 14px var(--accent-glow);
 }
 
 .topbar-meta {

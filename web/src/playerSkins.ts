@@ -1,7 +1,6 @@
 /**
- * Player layout variants (Melocix Orbit).
- * Brand colors stay red/black or blue/white — skins change stage layout, not the palette.
- * IDs kept for localStorage compatibility: glass | neon | soft.
+ * Melocix SIGNAL player variants — hard cyber geometry only.
+ * Legacy IDs kept for localStorage: glass | neon | soft.
  */
 
 export type PlayerSkinId = 'glass' | 'neon' | 'soft'
@@ -11,31 +10,30 @@ export type PlayerSkin = {
   name: string
   tagline: string
   inspiredBy: string
-  /** CSS gradient for preview card */
   preview: string
 }
 
 export const PLAYER_SKINS: PlayerSkin[] = [
   {
     id: 'glass',
-    name: 'Stage',
-    tagline: 'Large centered art, classic transport',
-    inspiredBy: 'Listening theater · vinyl stage',
-    preview: 'linear-gradient(145deg, #0a0a0a 0%, #e11d48 55%, #fb7185 100%)',
+    name: 'Signal',
+    tagline: 'Framed art, hard deck, crimson edge',
+    inspiredBy: 'Melocix SIGNAL · default deck',
+    preview: 'linear-gradient(145deg, #030303 0%, #1a0508 40%, #e11d48 100%)',
   },
   {
     id: 'neon',
-    name: 'Cinema',
-    tagline: 'Full-bleed glow, bold cover focus',
-    inspiredBy: 'Immersive dark cinema card',
-    preview: 'linear-gradient(135deg, #050505 0%, #be123c 40%, #9f1239 100%)',
+    name: 'Overdrive',
+    tagline: 'Hot accent rails, denser HUD chrome',
+    inspiredBy: 'High-gain SIGNAL overdrive',
+    preview: 'linear-gradient(135deg, #000 0%, #7f1d1d 45%, #e11d48 100%)',
   },
   {
     id: 'soft',
-    name: 'Compact',
-    tagline: 'Softer art, calm tactile controls',
-    inspiredBy: 'Desktop-friendly compact stage',
-    preview: 'linear-gradient(160deg, #111 0%, #9f1239 45%, #f43f5e 100%)',
+    name: 'Terminal',
+    tagline: 'Compact stage, mono ticks, dense deck',
+    inspiredBy: 'Operator terminal layout',
+    preview: 'linear-gradient(160deg, #050505 0%, #141414 50%, #9f1239 100%)',
   },
 ]
 

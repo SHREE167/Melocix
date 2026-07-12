@@ -1,20 +1,25 @@
 /**
- * Central UI symbols as unicode escapes — never store raw emoji in templates
- * that may be re-saved with the wrong encoding.
+ * Melocix UI symbols — sharp SVG icons + text-safe punctuation.
+ * Prefer icon helpers from ./ui/icons for interactive chrome.
  */
+import { icon, playPauseIcon } from './ui/icons'
+
+export { icon, playPauseIcon }
+
+/** Text-safe punctuation for labels (never emoji-heavy chrome). */
 export const SYM = {
-  note: '\u266A', // ♪
-  heart: '\u2665', // ♥
-  heartEmpty: '\u2661', // ♡
-  play: '\u25B6', // ▶
-  pause: '\u275A\u275A', // ❚❚
-  prev: '\u23EE', // ⏮
-  next: '\u23ED', // ⏭
-  back: '\u2190', // ←
-  down: '\u2193', // ↓
-  check: '\u2713', // ✓
-  plus: '\uFF0B', // ＋
-  times: '\u00D7', // ×
-  ellipsis: '\u2026', // …
-  middot: ' \u00B7 ', // ·
+  note: icon('signal', 18),
+  heart: icon('heartOn', 18),
+  heartEmpty: icon('heart', 18),
+  play: icon('play', 16),
+  pause: icon('pause', 16),
+  prev: icon('prev', 18),
+  next: icon('next', 18),
+  back: icon('back', 16),
+  down: icon('download', 16),
+  check: icon('check', 14),
+  plus: icon('plus', 16),
+  times: icon('x', 18),
+  ellipsis: '\u2026',
+  middot: ' \u00B7 ',
 } as const

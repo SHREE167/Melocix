@@ -33,8 +33,10 @@ export async function playBootAnimation(root: HTMLElement) {
   const splash = document.createElement('div')
   splash.className = 'boot-splash'
   splash.innerHTML = `
-    <div class="boot-mark" aria-hidden="true">\u266A</div>
-    <div class="boot-name">Melocix</div>
+    <div class="boot-mark" aria-hidden="true">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="miter" stroke-linecap="square" aria-hidden="true"><path d="M4 16v4M8 12v8M12 8v12M16 5v15M20 10v10"/></svg>
+    </div>
+    <div class="boot-name">SIGNAL</div>
   `
   root.appendChild(splash)
 

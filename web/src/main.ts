@@ -34,7 +34,7 @@ import {
   playShellEnter,
 } from './animations'
 import type { HomeShelf, LibrarySection, Song } from './types'
-import { SYM } from './uiSymbols'
+import { SYM, icon, playPauseIcon } from './uiSymbols'
 
 type Tab = 'home' | 'search' | 'library' | 'you'
 type Theme = 'dark' | 'light' | 'black'
@@ -132,7 +132,7 @@ function formatBytes(n: number): string {
 function emptyState(title: string, message: string): string {
   return `
     <div class="empty">
-      <div class="empty-icon">${SYM.note}</div>
+      <div class="empty-icon">${icon('signal', 28)}</div>
       <h2>${escapeHtml(title)}</h2>
       <p>${escapeHtml(message)}</p>
     </div>
@@ -307,7 +307,7 @@ function renderLibrary(): string {
           <button type="button" class="btn ghost" data-play-all="liked">${SYM.play} Play all</button>
         </div>
         <div class="song-list">${songs.map((s) => songRow(s)).join('')}</div>`
-      : emptyState('No liked songs', 'Tap ' + SYM.heartEmpty + ' on any track to save it here.')
+      : emptyState('No liked songs', 'Tap the heart on any track to save it here.')
   } else if (librarySection === 'history') {
     const entries = library.history()
     body = entries.length
@@ -339,7 +339,7 @@ function renderLibrary(): string {
                     ),
                 )
                 .join('')}</div>`
-            : emptyState('Empty playlist', 'Add songs with ' + SYM.plus + ' from search or home.')
+            : emptyState('Empty playlist', 'Add songs with + from search or home.')
         }`
     } else {
       const pls = library.playlists()
@@ -426,8 +426,8 @@ function renderYou(): string {
     </div>
 
     <div class="settings-group">
-      <div class="overline">Player layout</div>
-      <p class="section-hint">Stage layouts for now playing. Brand colors stay red/black or blue/white.</p>
+      <div class="overline">Player // SIGNAL</div>
+      <p class="section-hint">Custom Melocix deck variants. Same hard geometry — Signal, Overdrive, Terminal.</p>
       <div class="skin-grid">${skinCards}</div>
     </div>
 
@@ -453,8 +453,8 @@ function renderYou(): string {
     </div>
 
     <div class="about">
-      <strong style="color:var(--text)">Melocix Orbit</strong><br />
-      Listening-first UI · language picks · library · lyrics · layouts.<br />
+      <strong style="color:var(--text)">Melocix SIGNAL</strong><br />
+      Cyber deck player · sharp icons · language picks · library · lyrics.<br />
       Data stays in this browser (localStorage + IndexedDB).<br />
       API: ${apiOnline ? 'connected' : 'offline'} · Not affiliated with Google/YouTube.
     </div>
@@ -467,7 +467,7 @@ function onboardingHtml(): string {
       <div class="onboard">
         <div class="onboard-orb" aria-hidden="true"></div>
         <div class="onboard-card">
-          <div class="onboard-logo">${SYM.note}</div>
+          <div class="onboard-logo">${icon('signal', 28)}</div>
           <div class="onboard-wordmark">MELOCIX</div>
           <h1>Listen with focus</h1>
           <p class="onboard-lead">
@@ -541,15 +541,14 @@ function pageHtml(): string {
 
 function miniPlayerHtml(): string {
   const song = player.current
-  if (!song) return `<div class="mini-player skin-${playerSkin}" id="mini"></div>`
+  if (!song) return `<div class="mini-player signal skin-${playerSkin}" id="mini"></div>`
   const progress = Math.round(player.progress * 100)
   const liked = library.isLiked(song.id)
-  const playIcon = player.isLoading ? SYM.ellipsis : player.isPlaying ? SYM.pause : SYM.play
+  const playIcon = playPauseIcon(player.isPlaying, player.isLoading, 18)
 
-  // Calm dock: cover · meta · like · play · expand (transport lives in full player)
   return `
-    <div class="mini-player visible skin-${playerSkin}" id="mini" data-expand-player>
-      <div class="progress-line"><span style="width:${progress}%"></span></div>
+    <div class="mini-player signal visible skin-${playerSkin}" id="mini" data-expand-player>
+      <div class="progress-line signal-progress"><span style="width:${progress}%"></span></div>
       <div class="mini-art-wrap">
         <img class="mini-art" src="${safeImgSrc(song.cover)}" alt="" referrerpolicy="no-referrer" />
       </div>
@@ -558,38 +557,28 @@ function miniPlayerHtml(): string {
         <div class="artist">${escapeHtml(song.artist)}${player.isLoading ? SYM.middot + 'loading' + SYM.ellipsis : ''}</div>
       </div>
       <div class="mini-controls" data-stop>
-        <button type="button" class="icon-btn ${liked ? 'on' : ''}" data-like="${escapeHtml(song.id)}" title="Like" aria-label="Like">${liked ? SYM.heart : SYM.heartEmpty}</button>
-        <button type="button" class="mini-btn" data-toggle aria-label="Play or pause">${playIcon}</button>
-        <button type="button" class="icon-btn mini-expand" aria-label="Open player">⌃</button>
+        <button type="button" class="icon-btn sharp ${liked ? 'on' : ''}" data-like="${escapeHtml(song.id)}" title="Like" aria-label="Like">${liked ? icon('heartOn', 18) : icon('heart', 18)}</button>
+        <button type="button" class="mini-btn sharp" data-toggle aria-label="Play or pause">${playIcon}</button>
+        <button type="button" class="icon-btn sharp mini-expand" aria-label="Open player">${icon('chevronUp', 16)}</button>
       </div>
       ${player.lastError ? `<div class="mini-error">${escapeHtml(player.lastError)}</div>` : ''}
     </div>
   `
 }
 
-/** Full-screen player — 3 skins (glass vinyl / neon wave / soft pulse) */
+/** Melocix SIGNAL — custom cyber deck full player */
 function fullPlayerHtml(): string {
   if (!playerExpanded || !player.current) return ''
   const song = player.current
   const liked = library.isLiked(song.id)
   const saved = offlineIds.has(song.id)
   const progress = Math.round(player.progress * 1000)
+  const progressPct = Math.round(player.progress * 100)
   const queue = player.queueList
-  const playIcon = player.isLoading ? SYM.ellipsis : player.isPlaying ? SYM.pause : SYM.play
-
-  const artBlock =
-    playerSkin === 'glass'
-      ? `<div class="vinyl-wrap ${player.isPlaying ? 'playing' : ''}">
-          <div class="vinyl"><img src="${safeImgSrc(song.cover)}" alt="" referrerpolicy="no-referrer" /></div>
-        </div>`
-      : playerSkin === 'neon'
-        ? `<div class="neon-art-wrap ${player.isPlaying ? 'playing' : ''}">
-            <div class="neon-glow"></div>
-            <img class="neon-art" src="${safeImgSrc(song.cover)}" alt="" referrerpolicy="no-referrer" />
-          </div>`
-        : `<div class="soft-art-wrap ${player.isPlaying ? 'playing' : ''}">
-            <img class="soft-art" src="${safeImgSrc(song.cover)}" alt="" referrerpolicy="no-referrer" />
-          </div>`
+  const playIcon = playPauseIcon(player.isPlaying, player.isLoading, 26)
+  const status = player.isLoading ? 'BUFFER' : player.isPlaying ? 'PLAYING' : 'IDLE'
+  const repeatIcon =
+    player.repeatMode === 'one' ? icon('repeatOne', 18) : icon('repeat', 18)
 
   const sheetLyrics = playerSheetTab === 'lyrics' ? lyricsPanelHtml() : ''
   const sheetQueue =
@@ -601,7 +590,7 @@ function fullPlayerHtml(): string {
                   .map(
                     (s, i) => `
             <button type="button" class="fp-queue-item ${i === player.queueIndex ? 'active' : ''}" data-play="${escapeHtml(s.id)}" data-queue-play>
-              <span class="qi">${i === player.queueIndex ? SYM.note : i + 1}</span>
+              <span class="qi">${i === player.queueIndex ? icon('signal', 14) : i + 1}</span>
               <span class="qt">${escapeHtml(s.title)}</span>
               <span class="qa">${escapeHtml(s.artist)}</span>
             </button>`,
@@ -614,51 +603,60 @@ function fullPlayerHtml(): string {
   const sheetMore =
     playerSheetTab === 'more'
       ? `<div class="more-actions">
-          <button type="button" class="btn ghost" data-add-pl="${escapeHtml(song.id)}">${SYM.plus} Add to playlist</button>
-          <button type="button" class="btn ghost" data-offline="${escapeHtml(song.id)}">
-            ${offlineSavingId === song.id ? `Saving ${offlineSavePct}%` : saved ? 'Remove offline' : 'Save offline'}
+          <button type="button" class="btn ghost sharp" data-add-pl="${escapeHtml(song.id)}">${icon('plus', 16)} Add to playlist</button>
+          <button type="button" class="btn ghost sharp" data-offline="${escapeHtml(song.id)}">
+            ${offlineSavingId === song.id ? `Saving ${offlineSavePct}%` : saved ? 'Remove offline' : `${icon('download', 16)} Save offline`}
           </button>
           ${player.lastError ? `<p class="error-text">${escapeHtml(player.lastError)}</p>` : ''}
         </div>`
       : ''
 
   return `
-    <div class="full-player skin-${playerSkin}" id="full-player">
-      <div class="fp-bg" style="background-image:url('${cssCoverUrl(song.cover)}')"></div>
-      <div class="fp-scrim"></div>
+    <div class="full-player signal skin-${playerSkin}" id="full-player">
+      <div class="fp-void" style="--cover-wash:url('${cssCoverUrl(song.cover)}')"></div>
+      <div class="fp-frame" aria-hidden="true">
+        <span class="br tl"></span><span class="br tr"></span>
+        <span class="br bl"></span><span class="br brc"></span>
+      </div>
       <section class="fp-stage">
         <header class="fp-header">
-          <button type="button" class="icon-btn glass-btn" data-collapse-player aria-label="Close">${SYM.times}</button>
-          <div class="fp-now">Now playing</div>
-          <button type="button" class="icon-btn glass-btn ${liked ? 'on' : ''}" data-like="${escapeHtml(song.id)}" aria-label="Like">${liked ? SYM.heart : SYM.heartEmpty}</button>
+          <button type="button" class="icon-btn sharp" data-collapse-player aria-label="Close">${icon('x', 18)}</button>
+          <div class="fp-now"><span class="fp-sys">SIGNAL</span> // LIVE</div>
+          <button type="button" class="icon-btn sharp ${liked ? 'on' : ''}" data-like="${escapeHtml(song.id)}" aria-label="Like">${liked ? icon('heartOn', 18) : icon('heart', 18)}</button>
         </header>
-        ${artBlock}
+        <div class="fp-art-rig ${player.isPlaying ? 'playing' : ''}">
+          <div class="art-brackets" aria-hidden="true"></div>
+          <img class="art" src="${safeImgSrc(song.cover)}" alt="" referrerpolicy="no-referrer" />
+          <div class="art-status">${status}</div>
+        </div>
         <div class="fp-meta">
           <h2>${escapeHtml(song.title)}</h2>
           <p>${escapeHtml(song.artist)}${song.album ? ` · ${escapeHtml(song.album)}` : ''}</p>
         </div>
-        <div class="fp-seek">
-          <input type="range" min="0" max="1000" value="${progress}" data-seek />
+        <div class="fp-seek-rail">
+          <div class="seek-track">
+            <div class="seek-fill" style="width:${progressPct}%"></div>
+            <div class="seek-ticks" aria-hidden="true"></div>
+            <input type="range" min="0" max="1000" value="${progress}" data-seek aria-label="Seek" />
+          </div>
           <div class="fp-times">
             <span data-cur-time>${formatTime(player.currentTime)}</span>
             <span data-dur-time>${formatTime(player.duration)}</span>
           </div>
         </div>
-        <div class="fp-controls">
-          <button type="button" class="fp-side ${player.shuffleOn ? 'on' : ''}" data-shuffle title="Shuffle">⇄</button>
-          <button type="button" class="fp-side" data-prev title="Previous">${SYM.prev}</button>
-          <button type="button" class="fp-main" data-toggle title="Play/Pause">${playIcon}</button>
-          <button type="button" class="fp-side" data-next title="Next">${SYM.next}</button>
-          <button type="button" class="fp-side ${player.repeatMode !== 'off' ? 'on' : ''}" data-repeat title="Repeat">
-            ${player.repeatMode === 'one' ? '1' : '⟳'}
-          </button>
+        <div class="fp-deck">
+          <button type="button" class="fp-side sharp ${player.shuffleOn ? 'on' : ''}" data-shuffle title="Shuffle">${icon('shuffle', 18)}</button>
+          <button type="button" class="fp-side sharp" data-prev title="Previous">${icon('prev', 20)}</button>
+          <button type="button" class="fp-main sharp" data-toggle title="Play/Pause">${playIcon}</button>
+          <button type="button" class="fp-side sharp" data-next title="Next">${icon('next', 20)}</button>
+          <button type="button" class="fp-side sharp ${player.repeatMode !== 'off' ? 'on' : ''}" data-repeat title="Repeat">${repeatIcon}</button>
         </div>
       </section>
-      <section class="fp-sheet">
+      <section class="fp-sheet signal-sheet">
         <div class="fp-sheet-tabs">
-          <button type="button" class="${playerSheetTab === 'lyrics' ? 'active' : ''}" data-sheet-tab="lyrics">Lyrics</button>
-          <button type="button" class="${playerSheetTab === 'queue' ? 'active' : ''}" data-sheet-tab="queue">Queue</button>
-          <button type="button" class="${playerSheetTab === 'more' ? 'active' : ''}" data-sheet-tab="more">More</button>
+          <button type="button" class="${playerSheetTab === 'lyrics' ? 'active' : ''}" data-sheet-tab="lyrics">${icon('lyrics', 14)} Lyrics</button>
+          <button type="button" class="${playerSheetTab === 'queue' ? 'active' : ''}" data-sheet-tab="queue">${icon('queue', 14)} Queue</button>
+          <button type="button" class="${playerSheetTab === 'more' ? 'active' : ''}" data-sheet-tab="more">${icon('more', 14)} More</button>
         </div>
         <div class="fp-sheet-body">
           ${sheetLyrics}${sheetQueue}${sheetMore}
@@ -841,10 +839,10 @@ function playlistPickerHtml(): string {
   `
 }
 
-function navBtn(id: Tab, icon: string, label: string): string {
+function navBtn(id: Tab, glyph: string, label: string): string {
   return `
     <button type="button" data-tab="${id}" class="${tab === id ? 'active' : ''}">
-      <span class="icon">${icon}</span>${label}
+      <span class="icon">${glyph}</span>${label}
     </button>`
 }
 
@@ -862,7 +860,7 @@ function render() {
   app.innerHTML = `
     <div class="app-shell skin-${playerSkin} ${playerExpanded ? 'player-open' : ''} ${wide ? 'has-desktop-stage' : ''}">
       <header class="topbar">
-        <div class="brand"><span class="brand-mark">${SYM.note}</span> MELOCIX</div>
+        <div class="brand"><span class="brand-mark">${icon('signal', 16)}</span> MELOCIX</div>
         <div class="topbar-meta">
           <span class="status-dot ${apiOnline ? 'on' : ''}"></span>
           ${apiOnline ? 'Live' : 'Offline'}
@@ -881,10 +879,10 @@ function render() {
       </aside>
       ${miniPlayerHtml()}
       <nav class="nav">
-        ${navBtn('home', '⌂', 'Home')}
-        ${navBtn('search', '⌕', 'Search')}
-        ${navBtn('library', '▦', 'Library')}
-        ${navBtn('you', '☺', 'You')}
+        ${navBtn('home', icon('home', 20), 'Home')}
+        ${navBtn('search', icon('search', 20), 'Search')}
+        ${navBtn('library', icon('library', 20), 'Library')}
+        ${navBtn('you', icon('user', 20), 'You')}
       </nav>
       ${fullPlayerHtml()}
       ${playlistPickerHtml()}
@@ -966,7 +964,7 @@ async function fillOfflineSection() {
           <button type="button" class="btn ghost" data-play-all="offline">${SYM.play} Play all</button>
         </div>
         <div class="song-list">${songs.map((s) => songRow(s)).join('')}</div>`
-      : emptyState('Nothing offline', 'Tap ' + SYM.down + ' on a track to download for offline play.')
+      : emptyState('Nothing offline', 'Tap download on a track to save for offline play.')
     // re-bind offline list actions
     bindSongActions(host)
     host.querySelector('[data-play-all="offline"]')?.addEventListener('click', () => {
@@ -1441,11 +1439,8 @@ player.subscribe(() => {
     if (title) title.textContent = player.current.title
     if (artist)
       artist.textContent = `${player.current.artist}${player.isLoading ? SYM.middot + 'loading' + SYM.ellipsis : ''}`
-    if (art) {
-      art.setAttribute('src', player.current.cover)
-      art.classList.toggle('spin', player.isPlaying)
-    }
-    if (toggle) toggle.textContent = player.isLoading ? SYM.ellipsis : player.isPlaying ? SYM.pause : SYM.play
+    if (art) art.setAttribute('src', player.current.cover)
+    if (toggle) toggle.innerHTML = playPauseIcon(player.isPlaying, player.isLoading, 18)
     if (line) line.style.width = `${Math.round(player.progress * 100)}%`
   }
 
@@ -1454,12 +1449,17 @@ player.subscribe(() => {
     const seek = full.querySelector<HTMLInputElement>('[data-seek]')
     const cur = full.querySelector('[data-cur-time]')
     const dur = full.querySelector('[data-dur-time]')
-    const vinyl = full.querySelector('.vinyl-wrap')
-    if (toggle) toggle.textContent = player.isLoading ? SYM.ellipsis : player.isPlaying ? SYM.pause : SYM.play
+    const fill = full.querySelector('.seek-fill') as HTMLElement | null
+    const rig = full.querySelector('.fp-art-rig')
+    const status = full.querySelector('.art-status')
+    if (toggle) toggle.innerHTML = playPauseIcon(player.isPlaying, player.isLoading, 26)
     if (cur) cur.textContent = formatTime(player.currentTime)
     if (dur) dur.textContent = formatTime(player.duration)
     if (seek && document.activeElement !== seek) seek.value = String(Math.round(player.progress * 1000))
-    vinyl?.classList.toggle('playing', player.isPlaying)
+    if (fill) fill.style.width = `${Math.round(player.progress * 100)}%`
+    rig?.classList.toggle('playing', player.isPlaying)
+    if (status)
+      status.textContent = player.isLoading ? 'BUFFER' : player.isPlaying ? 'PLAYING' : 'IDLE'
   }
 })
 
