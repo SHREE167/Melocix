@@ -338,7 +338,7 @@ export async function getStreamUrl(videoId) {
   }
 
   throw new Error(
-    'Could not resolve stream. Install yt-dlp and ensure it works, or try another track.',
+    'Could not resolve stream. Install yt-dlp on PATH (https://github.com/yt-dlp/yt-dlp), restart Melocix, or try another track.',
   )
 }
 

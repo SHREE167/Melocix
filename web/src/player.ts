@@ -183,7 +183,11 @@ class Player {
       if (gen !== this.playGen) return
       console.warn('Playback blocked or failed', err)
       this.loading = false
-      this.error = err instanceof Error ? err.message : 'Could not start playback'
+      const msg = err instanceof Error ? err.message : 'Could not start playback'
+      this.error =
+        /yt-dlp|resolve stream|Invalid video/i.test(msg)
+          ? msg
+          : 'Playback failed — check that the Melocix API is running and yt-dlp is installed'
     }
     this.emit()
   }

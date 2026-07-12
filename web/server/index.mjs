@@ -30,7 +30,7 @@ const limitSearch = createRateLimiter({ windowMs: 60_000, max: 40 })
 app.use('/api', limitGeneral)
 
 app.get('/api/health', (_req, res) => {
-  res.json({ ok: true, service: 'melocix-api', phase: 'bugfix-i' })
+  res.json({ ok: true, service: 'melocix-api', phase: 'bugfix-ii' })
 })
 
 app.get('/api/home', async (req, res) => {

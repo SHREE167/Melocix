@@ -10,7 +10,8 @@ const config: CapacitorConfig = {
     // cleartext: true,
   },
   android: {
-    allowMixedContent: true,
+    // Keep false to avoid MITM via mixed HTTP content in WebView
+    allowMixedContent: false,
   },
 }
 

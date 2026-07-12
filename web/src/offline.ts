@@ -4,6 +4,8 @@ const DB_NAME = 'melocix-offline'
 const DB_VERSION = 1
 const STORE = 'tracks'
 const MAX_TRACKS = 40
+/** Hard cap per track to avoid tab OOM (bytes) */
+const MAX_TRACK_BYTES = 40 * 1024 * 1024
 
 type OfflineRecord = {
   id: string
@@ -93,12 +95,17 @@ export const offline = {
 
   /**
    * Download stream via our proxy and store for offline.
+   * Caps size to MAX_TRACK_BYTES to avoid OOM.
    */
   async save(song: Song, onProgress?: (pct: number) => void): Promise<void> {
     const res = await fetch(`/api/stream/${encodeURIComponent(song.id)}`)
     if (!res.ok) throw new Error(`Download failed (${res.status})`)
 
-    const total = Number(res.headers.get('content-length') || 0)
+    const headerLen = Number(res.headers.get('content-length') || 0)
+    if (headerLen > MAX_TRACK_BYTES) {
+      throw new Error('Track too large for offline save (max 40 MB)')
+    }
+
     const reader = res.body?.getReader()
     if (!reader) throw new Error('No response body')
 
@@ -108,9 +115,22 @@ export const offline = {
       const { done, value } = await reader.read()
       if (done) break
       if (value) {
-        chunks.push(value)
         received += value.byteLength
-        if (total && onProgress) onProgress(Math.min(99, Math.round((received / total) * 100)))
+        if (received > MAX_TRACK_BYTES) {
+          try {
+            reader.cancel()
+          } catch {
+            /* ignore */
+          }
+          throw new Error('Track too large for offline save (max 40 MB)')
+        }
+        chunks.push(value)
+        if (headerLen && onProgress) {
+          onProgress(Math.min(99, Math.round((received / headerLen) * 100)))
+        } else if (onProgress) {
+          // indeterminate-ish progress when length unknown
+          onProgress(Math.min(95, Math.round((received / (8 * 1024 * 1024)) * 100)))
+        }
       }
     }
     onProgress?.(100)
@@ -119,7 +139,6 @@ export const offline = {
     const blob = new Blob(chunks as BlobPart[], { type: mime })
 
     const db = await openDb()
-    // Evict oldest if over cap
     const existing = await refreshIndex()
     if (existing.length >= MAX_TRACKS && !existing.find((r) => r.id === song.id)) {
       const oldest = [...existing].sort((a, b) => a.savedAt - b.savedAt)[0]
@@ -146,7 +165,6 @@ export const offline = {
     putTx.objectStore(STORE).put(record)
     await txDone(putTx)
     cache?.set(song.id, song)
-    // refresh blob url
     const old = blobUrls.get(song.id)
     if (old) URL.revokeObjectURL(old)
     blobUrls.set(song.id, URL.createObjectURL(blob))
@@ -173,7 +191,6 @@ export const offline = {
   },
 }
 
-// warm index
 void refreshIndex().catch(() => {
   /* ignore */
 })

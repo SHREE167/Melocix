@@ -31,7 +31,12 @@ function load(): LibraryData {
 }
 
 function save(data: LibraryData) {
-  localStorage.setItem(KEY, JSON.stringify(data))
+  try {
+    localStorage.setItem(KEY, JSON.stringify(data))
+  } catch (err) {
+    // QuotaExceeded or private mode — keep in-memory state, avoid crash
+    console.warn('[library] persist failed', err)
+  }
 }
 
 let state = load()
@@ -113,7 +118,7 @@ export const library = {
   createPlaylist(name: string): Playlist {
     const pl: Playlist = {
       id: `pl_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`,
-      name: name.trim() || 'My playlist',
+      name: (name.trim() || 'My playlist').slice(0, 80),
       songIds: [],
       createdAt: Date.now(),
       updatedAt: Date.now(),
@@ -126,7 +131,8 @@ export const library = {
   renamePlaylist(id: string, name: string) {
     const p = state.playlists.find((x) => x.id === id)
     if (!p) return
-    p.name = name.trim() || p.name
+    const next = name.trim().slice(0, 80)
+    p.name = next || p.name
     p.updatedAt = Date.now()
     notify()
   },

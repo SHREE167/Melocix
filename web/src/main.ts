@@ -108,6 +108,11 @@ function cssCoverUrl(url: string): string {
   return cleaned
 }
 
+/** Safe remote image src for <img> */
+function safeImgSrc(url: string): string {
+  return cssCoverUrl(url)
+}
+
 function formatTime(sec: number): string {
   if (!sec || Number.isNaN(sec) || !Number.isFinite(sec)) return '0:00'
   const s = Math.floor(sec)
@@ -170,7 +175,7 @@ function songCard(song: Song): string {
   return `
     <button class="song-card glass" type="button" data-play="${escapeHtml(song.id)}">
       <div class="card-art-wrap">
-        <img src="${escapeHtml(song.cover)}" alt="" loading="lazy" referrerpolicy="no-referrer" />
+        <img src="${safeImgSrc(song.cover)}" alt="" loading="lazy" referrerpolicy="no-referrer" />
         ${library.isLiked(song.id) ? '<span class="card-heart">♥</span>' : ''}
         ${offlineIds.has(song.id) ? '<span class="card-dl">↓</span>' : ''}
       </div>
@@ -185,7 +190,7 @@ function songRow(song: Song, extra = ''): string {
   return `
     <div class="song-row-wrap ${active ? 'active' : ''}">
       <button class="song-row" type="button" data-play="${escapeHtml(song.id)}">
-        <img src="${escapeHtml(song.cover)}" alt="" loading="lazy" referrerpolicy="no-referrer" />
+        <img src="${safeImgSrc(song.cover)}" alt="" loading="lazy" referrerpolicy="no-referrer" />
         <div class="meta">
           <div class="title">${escapeHtml(song.title)}</div>
           <div class="artist">${escapeHtml(song.artist)}</div>
@@ -499,7 +504,7 @@ function miniPlayerHtml(): string {
       style="--mini-accent:${accent.secondary};--mini-bg:${accent.primary}">
       <div class="progress-line wave-line"><span style="width:${progress}%"></span></div>
       <div class="mini-art-wrap">
-        <img class="mini-art ${player.isPlaying ? 'spin' : ''}" src="${escapeHtml(song.cover)}" alt="" referrerpolicy="no-referrer" />
+        <img class="mini-art ${player.isPlaying ? 'spin' : ''}" src="${safeImgSrc(song.cover)}" alt="" referrerpolicy="no-referrer" />
       </div>
       <div class="mini-meta">
         <div class="title">${escapeHtml(song.title)}</div>
@@ -529,15 +534,15 @@ function fullPlayerHtml(): string {
   const artBlock =
     playerSkin === 'glass'
       ? `<div class="vinyl-wrap ${player.isPlaying ? 'playing' : ''}">
-          <div class="vinyl"><img src="${escapeHtml(song.cover)}" alt="" referrerpolicy="no-referrer" /></div>
+          <div class="vinyl"><img src="${safeImgSrc(song.cover)}" alt="" referrerpolicy="no-referrer" /></div>
         </div>`
       : playerSkin === 'neon'
         ? `<div class="neon-art-wrap ${player.isPlaying ? 'playing' : ''}">
             <div class="neon-glow"></div>
-            <img class="neon-art" src="${escapeHtml(song.cover)}" alt="" referrerpolicy="no-referrer" />
+            <img class="neon-art" src="${safeImgSrc(song.cover)}" alt="" referrerpolicy="no-referrer" />
           </div>`
         : `<div class="soft-art-wrap ${player.isPlaying ? 'playing' : ''}">
-            <img class="soft-art" src="${escapeHtml(song.cover)}" alt="" referrerpolicy="no-referrer" />
+            <img class="soft-art" src="${safeImgSrc(song.cover)}" alt="" referrerpolicy="no-referrer" />
           </div>`
 
   return `
