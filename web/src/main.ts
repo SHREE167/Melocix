@@ -65,6 +65,7 @@ let playerSkin: PlayerSkinId = loadPlayerSkin()
 let librarySection: LibrarySection = 'liked'
 let openPlaylistId: string | null = null
 let playerExpanded = false
+let playerSheetTab: 'lyrics' | 'queue' | 'more' = 'lyrics'
 let playlistPickerOpen = false
 let offlineSavingId: string | null = null
 let offlineSavePct = 0
@@ -84,13 +85,13 @@ const app = document.querySelector<HTMLDivElement>('#app')!
 
 function applyTheme() {
   document.body.classList.remove('theme-light', 'theme-black', 'theme-dark')
-  if (theme === 'light') document.body.classList.add('theme-light')
-  else if (theme === 'black') document.body.classList.add('theme-black')
+  const mode = theme === 'light' ? 'light' : theme === 'black' ? 'black' : 'dark'
+  if (mode === 'light') document.body.classList.add('theme-light')
+  else if (mode === 'black') document.body.classList.add('theme-black')
   else document.body.classList.add('theme-dark')
+  document.documentElement.setAttribute('data-theme', mode)
   localStorage.setItem(THEME_KEY, theme)
-  // Brand accents stay theme-driven; cover palette only tints full-player CSS vars
   document.body.dataset.playerSkin = playerSkin
-  document.documentElement.style.setProperty('--fp-accent-dynamic', accent.secondary)
 }
 
 function escapeHtml(s: string): string {
@@ -206,6 +207,8 @@ function songRow(song: Song, extra = ''): string {
 }
 
 function renderHome(): string {
+  const hist = library.history()
+  const continueSong = player.current || hist[0]?.song || homeShelves[0]?.songs?.[0]
   let body: string
   if (homeLoading && !homeShelves.length) body = spinner('Loading recommendations for you' + SYM.ellipsis)
   else if (homeError && !homeShelves.length) body = errorState(homeError, 'home')
@@ -215,6 +218,7 @@ function renderHome(): string {
       .map(
         (shelf) => `
       <section class="section">
+        <div class="overline">Collection</div>
         <h2 class="section-title">${escapeHtml(shelf.title)}</h2>
         <div class="shelf">${shelf.songs.map(songCard).join('')}</div>
       </section>`,
@@ -226,10 +230,34 @@ function renderHome(): string {
     ? `Picks for ${escapeHtml(languagesLabel(selectedLangs))}`
     : 'Pick music languages in You for better recommendations'
 
+  const hero = continueSong
+    ? `
+    <article class="hero-continue">
+      <img class="hero-cover" src="${safeImgSrc(continueSong.cover)}" alt="" referrerpolicy="no-referrer" />
+      <div class="hero-body">
+        <div class="overline">Continue</div>
+        <h2>${escapeHtml(continueSong.title)}</h2>
+        <p class="caption">${escapeHtml(continueSong.artist)}</p>
+        <div class="hero-actions">
+          <button type="button" class="btn sm" data-play="${escapeHtml(continueSong.id)}">${SYM.play} Play</button>
+          <button type="button" class="btn ghost sm" data-like="${escapeHtml(continueSong.id)}">${library.isLiked(continueSong.id) ? SYM.heart : SYM.heartEmpty}</button>
+        </div>
+      </div>
+    </article>`
+    : ''
+
   return `
-    <div class="greeting">
+    <div class="page-head">
+      <div class="overline">Home</div>
       <h1>Good listening</h1>
       <p>${langHint}${apiOnline ? '' : ' · <span class="error-text">API offline</span>'}</p>
+    </div>
+    ${hero}
+    <div class="quick-row">
+      <button type="button" class="quick-pill" data-tab-jump="library" data-lib-jump="liked">Liked</button>
+      <button type="button" class="quick-pill" data-tab-jump="library" data-lib-jump="offline">Offline</button>
+      <button type="button" class="quick-pill" data-tab-jump="library" data-lib-jump="history">History</button>
+      <button type="button" class="quick-pill" data-tab-jump="search">Search</button>
     </div>
     ${body}
   `
@@ -244,7 +272,10 @@ function renderSearch(): string {
   else body = `<div class="song-list">${searchResults.map((s) => songRow(s)).join('')}</div>`
 
   return `
-    <div class="page-header"><h1>Search</h1></div>
+    <div class="page-head">
+      <div class="overline">Search</div>
+      <h1>Find music</h1>
+    </div>
     <input class="search-box" type="search" placeholder="Songs, artists, albums" value="${escapeHtml(searchQuery)}" data-search />
     <div style="margin-top:16px">${body}</div>
   `
@@ -262,8 +293,8 @@ function renderLibrary(): string {
   const chips = sections
     .map(
       (s) => `
-    <button type="button" class="chip ${librarySection === s.id ? 'active' : ''}" data-lib-section="${s.id}">
-      ${s.label} <span class="chip-count">${s.count}</span>
+    <button type="button" class="${librarySection === s.id ? 'active' : ''}" data-lib-section="${s.id}">
+      ${s.label}
     </button>`,
     )
     .join('')
@@ -339,11 +370,12 @@ function renderLibrary(): string {
   }
 
   return `
-    <div class="page-header">
-      <h1>Library</h1>
-      <p>Liked · history · playlists · offline — stored on this device</p>
+    <div class="page-head">
+      <div class="overline">Library</div>
+      <h1>Your music</h1>
+      <p>Liked, history, playlists, offline — on this device</p>
     </div>
-    <div class="chips lib-chips">${chips}</div>
+    <div class="segmented">${chips}</div>
     ${body}
   `
 }
@@ -370,42 +402,59 @@ function renderYou(): string {
   ).join('')
 
   return `
-    <div class="page-header">
+    <div class="page-head">
+      <div class="overline">Profile</div>
       <h1>You</h1>
-      <p>Appearance, player skins &amp; library stats</p>
+      <p>Appearance, player layout, and library</p>
     </div>
 
-    <h2 class="section-title">Player style</h2>
-    <p class="section-hint">Pick how the mini bar and full player look. Inspired by <a class="inline-link" href="https://freefrontend.com/javascript-music-players/" target="_blank" rel="noopener">JS music players</a>.</p>
-    <div class="skin-grid">${skinCards}</div>
-
-    <h2 class="section-title" style="margin-top:28px">Theme</h2>
-    <div class="chips">
-      ${themes
-        .map(
-          (t) => `
-        <button type="button" class="chip ${theme === t ? 'active' : ''}" data-theme="${t}">
-          ${t[0].toUpperCase() + t.slice(1)}
-        </button>`,
-        )
-        .join('')}
+    <div class="settings-group">
+      <div class="overline">Appearance</div>
+      <div class="settings-card">
+        <div class="theme-cards">
+          ${themes
+            .map(
+              (th) => `
+            <button type="button" class="theme-card ${theme === th ? 'active' : ''}" data-theme="${th}">
+              <div class="theme-swatch ${th}"></div>
+              <strong>${th[0].toUpperCase() + th.slice(1)}</strong>
+            </button>`,
+            )
+            .join('')}
+        </div>
+      </div>
     </div>
-    <h2 class="section-title" style="margin-top:28px">Music languages</h2>
-    <p class="section-hint">
-      Home recommendations use these (1–${MAX_LANGS}).
-      ${selectedLangs.length ? `<br/>Current: <strong>${escapeHtml(languagesLabel(selectedLangs))}</strong>` : ''}
-    </p>
-    <button type="button" class="btn" data-edit-languages>Edit languages</button>
 
-    <div class="stats-grid">
-      <div class="stat glass"><b>${stats.liked}</b><span>Liked</span></div>
-      <div class="stat glass"><b>${stats.history}</b><span>History</span></div>
-      <div class="stat glass"><b>${stats.playlists}</b><span>Playlists</span></div>
-      <div class="stat glass"><b>${offlineIds.size}</b><span>Offline</span></div>
+    <div class="settings-group">
+      <div class="overline">Player layout</div>
+      <p class="section-hint">Stage layouts for now playing. Brand colors stay red/black or blue/white.</p>
+      <div class="skin-grid">${skinCards}</div>
     </div>
+
+    <div class="settings-group">
+      <div class="overline">Music languages</div>
+      <div class="settings-card">
+        <p class="section-hint" style="margin:0 0 12px">
+          Home recommendations use these (1–${MAX_LANGS}).
+          ${selectedLangs.length ? `<br/>Current: <strong>${escapeHtml(languagesLabel(selectedLangs))}</strong>` : ''}
+        </p>
+        <button type="button" class="btn ghost" data-edit-languages>Edit languages</button>
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <div class="overline">Library stats</div>
+      <div class="stats-grid">
+        <div class="stat"><b>${stats.liked}</b><span>Liked</span></div>
+        <div class="stat"><b>${stats.history}</b><span>History</span></div>
+        <div class="stat"><b>${stats.playlists}</b><span>Playlists</span></div>
+        <div class="stat"><b>${offlineIds.size}</b><span>Offline</span></div>
+      </div>
+    </div>
+
     <div class="about">
-      <strong style="color:var(--on-ink)">Melocix</strong><br />
-      Welcome onboarding · language-based picks · library · lyrics · player skins.<br />
+      <strong style="color:var(--text)">Melocix Orbit</strong><br />
+      Listening-first UI · language picks · library · lyrics · layouts.<br />
       Data stays in this browser (localStorage + IndexedDB).<br />
       API: ${apiOnline ? 'connected' : 'offline'} · Not affiliated with Google/YouTube.
     </div>
@@ -416,18 +465,15 @@ function onboardingHtml(): string {
   if (onboardingStep === 'welcome' && !editingLanguages) {
     return `
       <div class="onboard">
-        <div class="onboard-card glass">
+        <div class="onboard-orb" aria-hidden="true"></div>
+        <div class="onboard-card">
           <div class="onboard-logo">${SYM.note}</div>
-          <h1>Welcome to Melocix</h1>
+          <div class="onboard-wordmark">MELOCIX</div>
+          <h1>Listen with focus</h1>
           <p class="onboard-lead">
-            YouTube Music, refined — fast search, offline saves, lyrics, and a player that feels yours.
+            Search, stream, save offline, and sing along — a calm listening stage built around your languages.
           </p>
-          <ul class="onboard-bullets">
-            <li>Stream &amp; search freely</li>
-            <li>Like, playlists &amp; offline</li>
-            <li>Synced lyrics &amp; 3 player skins</li>
-          </ul>
-          <button type="button" class="btn onboard-cta" data-onboard-next>Get started</button>
+          <button type="button" class="btn onboard-cta" data-onboard-next>Start listening</button>
           <p class="onboard-fine">Not affiliated with Google or YouTube</p>
         </div>
       </div>`
@@ -454,12 +500,12 @@ function onboardingHtml(): string {
 
   return `
     <div class="onboard">
-      <div class="onboard-card glass onboard-wide">
-        ${editingLanguages ? '' : '<div class="onboard-step">Step 2 of 2</div>'}
+      <div class="onboard-orb" aria-hidden="true"></div>
+      <div class="onboard-card onboard-wide">
+        ${editingLanguages ? '' : '<div class="onboard-step">2 / 2</div>'}
         <h1>${editingLanguages ? 'Music languages' : 'What do you listen to?'}</h1>
         <p class="onboard-lead">
-          Choose <strong>at least ${MIN_LANGS}</strong> and up to <strong>${MAX_LANGS}</strong> languages.
-          We’ll recommend songs based on your picks.
+          Choose <strong>at least ${MIN_LANGS}</strong> and up to <strong>${MAX_LANGS}</strong> languages for Home recommendations.
         </p>
         <div class="lang-counter ${canContinue ? 'ok' : ''}">
           ${count} / ${MAX_LANGS} selected
@@ -473,7 +519,7 @@ function onboardingHtml(): string {
               : `<button type="button" class="btn ghost" data-onboard-back>Back</button>`
           }
           <button type="button" class="btn onboard-cta" data-onboard-finish ${canContinue ? '' : 'disabled'}>
-            ${editingLanguages ? 'Save & refresh Home' : 'Finish & open Melocix'}
+            ${editingLanguages ? 'Save & refresh Home' : 'Enter Melocix'}
           </button>
         </div>
       </div>
@@ -500,23 +546,21 @@ function miniPlayerHtml(): string {
   const liked = library.isLiked(song.id)
   const playIcon = player.isLoading ? SYM.ellipsis : player.isPlaying ? SYM.pause : SYM.play
 
-  // Shared controls; layout/skin via CSS classes
+  // Calm dock: cover · meta · like · play · expand (transport lives in full player)
   return `
-    <div class="mini-player visible skin-${playerSkin}" id="mini" data-expand-player
-      style="--mini-accent:${accent.secondary};--mini-bg:${accent.primary}">
-      <div class="progress-line wave-line"><span style="width:${progress}%"></span></div>
+    <div class="mini-player visible skin-${playerSkin}" id="mini" data-expand-player>
+      <div class="progress-line"><span style="width:${progress}%"></span></div>
       <div class="mini-art-wrap">
-        <img class="mini-art ${player.isPlaying ? 'spin' : ''}" src="${safeImgSrc(song.cover)}" alt="" referrerpolicy="no-referrer" />
+        <img class="mini-art" src="${safeImgSrc(song.cover)}" alt="" referrerpolicy="no-referrer" />
       </div>
       <div class="mini-meta">
         <div class="title">${escapeHtml(song.title)}</div>
         <div class="artist">${escapeHtml(song.artist)}${player.isLoading ? SYM.middot + 'loading' + SYM.ellipsis : ''}</div>
       </div>
       <div class="mini-controls" data-stop>
-        <button type="button" class="icon-btn ${liked ? 'on' : ''}" data-like="${escapeHtml(song.id)}" title="Like">${liked ? SYM.heart : SYM.heartEmpty}</button>
-        <button type="button" class="ctrl" data-prev aria-label="Previous">${SYM.prev}</button>
+        <button type="button" class="icon-btn ${liked ? 'on' : ''}" data-like="${escapeHtml(song.id)}" title="Like" aria-label="Like">${liked ? SYM.heart : SYM.heartEmpty}</button>
         <button type="button" class="mini-btn" data-toggle aria-label="Play or pause">${playIcon}</button>
-        <button type="button" class="ctrl" data-next aria-label="Next">${SYM.next}</button>
+        <button type="button" class="icon-btn mini-expand" aria-label="Open player">⌃</button>
       </div>
       ${player.lastError ? `<div class="mini-error">${escapeHtml(player.lastError)}</div>` : ''}
     </div>
@@ -547,33 +591,59 @@ function fullPlayerHtml(): string {
             <img class="soft-art" src="${safeImgSrc(song.cover)}" alt="" referrerpolicy="no-referrer" />
           </div>`
 
+  const sheetLyrics = playerSheetTab === 'lyrics' ? lyricsPanelHtml() : ''
+  const sheetQueue =
+    playerSheetTab === 'queue'
+      ? `<div class="fp-queue-list">
+          ${
+            queue.length
+              ? queue
+                  .map(
+                    (s, i) => `
+            <button type="button" class="fp-queue-item ${i === player.queueIndex ? 'active' : ''}" data-play="${escapeHtml(s.id)}" data-queue-play>
+              <span class="qi">${i === player.queueIndex ? SYM.note : i + 1}</span>
+              <span class="qt">${escapeHtml(s.title)}</span>
+              <span class="qa">${escapeHtml(s.artist)}</span>
+            </button>`,
+                  )
+                  .join('')
+              : '<p class="muted">Queue is empty</p>'
+          }
+        </div>`
+      : ''
+  const sheetMore =
+    playerSheetTab === 'more'
+      ? `<div class="more-actions">
+          <button type="button" class="btn ghost" data-add-pl="${escapeHtml(song.id)}">${SYM.plus} Add to playlist</button>
+          <button type="button" class="btn ghost" data-offline="${escapeHtml(song.id)}">
+            ${offlineSavingId === song.id ? `Saving ${offlineSavePct}%` : saved ? 'Remove offline' : 'Save offline'}
+          </button>
+          ${player.lastError ? `<p class="error-text">${escapeHtml(player.lastError)}</p>` : ''}
+        </div>`
+      : ''
+
   return `
-    <div class="full-player skin-${playerSkin}" id="full-player"
-      style="--fp-bg:${accent.primary};--fp-accent:${accent.secondary}">
+    <div class="full-player skin-${playerSkin}" id="full-player">
       <div class="fp-bg" style="background-image:url('${cssCoverUrl(song.cover)}')"></div>
       <div class="fp-scrim"></div>
-      <div class="fp-inner">
+      <section class="fp-stage">
         <header class="fp-header">
           <button type="button" class="icon-btn glass-btn" data-collapse-player aria-label="Close">${SYM.times}</button>
-          <div class="fp-now">${playerSkin === 'neon' ? 'NOW PLAYING' : playerSkin === 'soft' ? 'Playing' : 'Now playing'}</div>
+          <div class="fp-now">Now playing</div>
           <button type="button" class="icon-btn glass-btn ${liked ? 'on' : ''}" data-like="${escapeHtml(song.id)}" aria-label="Like">${liked ? SYM.heart : SYM.heartEmpty}</button>
         </header>
-
         ${artBlock}
-
         <div class="fp-meta">
           <h2>${escapeHtml(song.title)}</h2>
           <p>${escapeHtml(song.artist)}${song.album ? ` · ${escapeHtml(song.album)}` : ''}</p>
         </div>
-
-        <div class="fp-seek ${playerSkin === 'neon' ? 'seek-wave' : ''}">
+        <div class="fp-seek">
           <input type="range" min="0" max="1000" value="${progress}" data-seek />
           <div class="fp-times">
             <span data-cur-time>${formatTime(player.currentTime)}</span>
             <span data-dur-time>${formatTime(player.duration)}</span>
           </div>
         </div>
-
         <div class="fp-controls">
           <button type="button" class="fp-side ${player.shuffleOn ? 'on' : ''}" data-shuffle title="Shuffle">⇄</button>
           <button type="button" class="fp-side" data-prev title="Previous">${SYM.prev}</button>
@@ -583,39 +653,17 @@ function fullPlayerHtml(): string {
             ${player.repeatMode === 'one' ? '1' : '⟳'}
           </button>
         </div>
-
-        <div class="fp-extra">
-          <button type="button" class="btn ghost glass-btn ${lyricsShowPanel ? 'on-chip' : ''}" data-toggle-lyrics>${SYM.note} Lyrics
-          </button>
-          <button type="button" class="btn ghost glass-btn" data-add-pl="${escapeHtml(song.id)}">${SYM.plus} Playlist</button>
-          <button type="button" class="btn ghost glass-btn" data-offline="${escapeHtml(song.id)}">
-            ${offlineSavingId === song.id ? `Saving ${offlineSavePct}%` : saved ? SYM.down + SYM.check : SYM.down}
-          </button>
+      </section>
+      <section class="fp-sheet">
+        <div class="fp-sheet-tabs">
+          <button type="button" class="${playerSheetTab === 'lyrics' ? 'active' : ''}" data-sheet-tab="lyrics">Lyrics</button>
+          <button type="button" class="${playerSheetTab === 'queue' ? 'active' : ''}" data-sheet-tab="queue">Queue</button>
+          <button type="button" class="${playerSheetTab === 'more' ? 'active' : ''}" data-sheet-tab="more">More</button>
         </div>
-
-        ${lyricsShowPanel ? lyricsPanelHtml() : ''}
-
-        ${
-          queue.length > 1
-            ? `<div class="fp-queue glass">
-                <div class="fp-queue-title">Up next · ${queue.length} tracks</div>
-                <div class="fp-queue-list">
-                  ${queue
-                    .map(
-                      (s, i) => `
-                    <button type="button" class="fp-queue-item ${i === player.queueIndex ? 'active' : ''}" data-play="${escapeHtml(s.id)}" data-queue-play>
-                      <span class="qi">${i === player.queueIndex ? SYM.note : i + 1}</span>
-                      <span class="qt">${escapeHtml(s.title)}</span>
-                      <span class="qa">${escapeHtml(s.artist)}</span>
-                    </button>`,
-                    )
-                    .join('')}
-                </div>
-              </div>`
-            : ''
-        }
-        ${player.lastError ? `<div class="mini-error">${escapeHtml(player.lastError)}</div>` : ''}
-      </div>
+        <div class="fp-sheet-body">
+          ${sheetLyrics}${sheetQueue}${sheetMore}
+        </div>
+      </section>
     </div>
   `
 }
@@ -810,9 +858,27 @@ function render() {
     return
   }
 
+  const wide = typeof window !== 'undefined' && window.innerWidth >= 960
   app.innerHTML = `
-    <div class="app-shell skin-${playerSkin} ${playerExpanded ? 'player-open' : ''}">
-      <main class="content" id="content">${pageHtml()}</main>
+    <div class="app-shell skin-${playerSkin} ${playerExpanded ? 'player-open' : ''} ${wide ? 'has-desktop-stage' : ''}">
+      <header class="topbar">
+        <div class="brand"><span class="brand-mark">${SYM.note}</span> MELOCIX</div>
+        <div class="topbar-meta">
+          <span class="status-dot ${apiOnline ? 'on' : ''}"></span>
+          ${apiOnline ? 'Live' : 'Offline'}
+        </div>
+      </header>
+      <main class="content content-enter" id="content">${pageHtml()}</main>
+      <aside class="desktop-stage">
+        ${
+          player.current
+            ? `<div class="overline">Now playing</div>
+               <img class="hero-cover" src="${safeImgSrc(player.current.cover)}" alt="" referrerpolicy="no-referrer" />
+               <h2 class="title">${escapeHtml(player.current.title)}</h2>
+               <p class="caption">${escapeHtml(player.current.artist)}</p>`
+            : `<div class="overline">Stage</div><p class="muted">Play a track to fill the listening stage.</p>`
+        }
+      </aside>
       ${miniPlayerHtml()}
       <nav class="nav">
         ${navBtn('home', '⌂', 'Home')}
@@ -1032,7 +1098,7 @@ function bindEvents() {
     const t = e.target as HTMLElement
     if (t.closest('[data-stop]')) return
     playerExpanded = true
-    lyricsShowPanel = true
+    playerSheetTab = 'lyrics'
     if (player.current && lyricsSongId !== player.current.id) {
       lyricsLoading = true
       lyricsData = null
@@ -1075,6 +1141,25 @@ function bindEvents() {
   const seek = app.querySelectorAll<HTMLInputElement>('[data-seek]')
   seek.forEach((el) => {
     el.addEventListener('input', () => player.seek(Number(el.value) / 1000))
+  })
+
+
+  app.querySelectorAll<HTMLButtonElement>('[data-sheet-tab]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      playerSheetTab = btn.dataset.sheetTab as 'lyrics' | 'queue' | 'more'
+      if (playerSheetTab === 'lyrics') void loadLyricsForCurrent()
+      render()
+    })
+  })
+
+  app.querySelectorAll<HTMLButtonElement>('[data-tab-jump]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      tab = btn.dataset.tabJump as Tab
+      const lib = btn.dataset.libJump as LibrarySection | undefined
+      if (lib) librarySection = lib
+      openPlaylistId = null
+      render()
+    })
   })
 
   app.querySelectorAll<HTMLButtonElement>('[data-theme]').forEach((btn) => {
@@ -1251,9 +1336,8 @@ function focusSearch() {
 
 async function refreshAccent() {
   if (!player.current) return
+  // Keep brand theme tokens on :root; only tint full-player chrome from cover art.
   accent = await extractPalette(player.current.cover)
-  document.documentElement.style.setProperty('--accent', accent.primary)
-  document.documentElement.style.setProperty('--accent-2', accent.secondary)
   const fp = document.getElementById('full-player')
   if (fp) {
     fp.style.setProperty('--fp-bg', accent.primary)
