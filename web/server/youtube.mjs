@@ -282,6 +282,11 @@ function runYtDlp(args) {
  * @param {string} videoId
  */
 export async function getStreamUrl(videoId) {
+  // Hard validate before spawning yt-dlp or calling YouTube
+  if (typeof videoId !== 'string' || !/^[\w-]{6,20}$/.test(videoId)) {
+    throw new Error('Invalid video id')
+  }
+
   const watchUrl = `https://www.youtube.com/watch?v=${videoId}`
   const nodePath = process.execPath
 
@@ -295,6 +300,7 @@ export async function getStreamUrl(videoId) {
       '-g',
       '--no-playlist',
       '--no-warnings',
+      '--',
       watchUrl,
     ])
     const url = lines[0]

@@ -15,6 +15,8 @@ class Player {
   private error: string | null = null
   private shuffle = false
   private repeat: 'off' | 'all' | 'one' = 'off'
+  /** Bumps on every play request so stale loads are ignored */
+  private playGen = 0
 
   constructor() {
     this.audio.preload = 'metadata'
@@ -138,7 +140,6 @@ class Player {
   }
 
   private async resolveSrc(song: Song): Promise<string> {
-    // Prefer offline blob when available
     try {
       const blobUrl = await offline.getBlobUrl(song.id)
       if (blobUrl) return blobUrl
@@ -149,20 +150,37 @@ class Player {
   }
 
   private async loadAndPlay(song: Song) {
+    const gen = ++this.playGen
     this.song = song
     this.loading = true
     this.error = null
     library.rememberSong(song)
-    library.addHistory(song)
     this.emit()
+
+    // Stop previous network load
+    try {
+      this.audio.pause()
+      this.audio.removeAttribute('src')
+      this.audio.load()
+    } catch {
+      /* ignore */
+    }
 
     try {
       const src = await this.resolveSrc(song)
+      if (gen !== this.playGen) return
+
       this.audio.src = src
       await this.audio.play()
+
+      if (gen !== this.playGen) return
+
       this.loading = false
       this.error = null
+      // Only record history after successful start
+      library.addHistory(song)
     } catch (err) {
+      if (gen !== this.playGen) return
       console.warn('Playback blocked or failed', err)
       this.loading = false
       this.error = err instanceof Error ? err.message : 'Could not start playback'
@@ -200,8 +218,13 @@ class Player {
 
     if (this.shuffle && this.queue.length > 1) {
       let next = this.index
-      while (next === this.index) {
+      let tries = 0
+      while (next === this.index && tries < 12) {
         next = Math.floor(Math.random() * this.queue.length)
+        tries++
+      }
+      if (next === this.index) {
+        next = (this.index + 1) % this.queue.length
       }
       this.index = next
       await this.loadAndPlay(this.queue[this.index])

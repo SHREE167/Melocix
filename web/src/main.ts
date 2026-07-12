@@ -77,6 +77,7 @@ let lyricsError: string | null = null
 let lyricsData: LyricsResult | null = null
 let lyricsShowPanel = true
 let lastSyncedIndex = -1
+let lyricsGen = 0
 
 const app = document.querySelector<HTMLDivElement>('#app')!
 
@@ -96,6 +97,15 @@ function escapeHtml(s: string): string {
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;')
+}
+
+/** Safe CSS url() for cover art (blocks quotes / parentheses breakout) */
+function cssCoverUrl(url: string): string {
+  const cleaned = (url || '').replace(/[\n\r"'()\\]/g, '')
+  if (!cleaned) return ''
+  if (!/^https?:\/\//i.test(cleaned) && !cleaned.startsWith('data:image/')) return ''
+  return cleaned
 }
 
 function formatTime(sec: number): string {
@@ -145,11 +155,11 @@ function songActions(song: Song): string {
   const saving = offlineSavingId === song.id
   return `
     <div class="row-actions" data-stop>
-      <button type="button" class="icon-btn ${liked ? '♥' : '♡'}" data-like="${escapeHtml(song.id)}" title="Like">
+      <button type="button" class="icon-btn ${liked ? 'on' : ''}" data-like="${escapeHtml(song.id)}" title="Like">
         ${liked ? '♥' : '♡'}
       </button>
       <button type="button" class="icon-btn" data-add-pl="${escapeHtml(song.id)}" title="Add to playlist">＋</button>
-      <button type="button" class="icon-btn ${saved ? '↓✓' : '↓'}" data-offline="${escapeHtml(song.id)}" title="${saved ? '↓✓' : '↓'}">
+      <button type="button" class="icon-btn ${saved ? 'on' : ''}" data-offline="${escapeHtml(song.id)}" title="${saved ? 'Remove offline' : 'Save offline'}">
         ${saving ? `${offlineSavePct}%` : saved ? '↓✓' : '↓'}
       </button>
     </div>
@@ -287,7 +297,7 @@ function renderLibrary(): string {
                   (s) =>
                     songRow(
                       s,
-                      `<button type="button" class="icon-btn danger" data-remove-pl-song="${escapeHtml(s.id)}" data-pl="${openPlaylistId}" title="Remove">âœ•</button>`,
+                      `<button type="button" class="icon-btn danger" data-remove-pl-song="${escapeHtml(s.id)}" data-pl="${openPlaylistId}" title="Remove">×</button>`,
                     ),
                 )
                 .join('')}</div>`
@@ -493,10 +503,10 @@ function miniPlayerHtml(): string {
       </div>
       <div class="mini-meta">
         <div class="title">${escapeHtml(song.title)}</div>
-        <div class="artist">${escapeHtml(song.artist)}${player.isLoading ? ' · loadingâ€¦' : ''}</div>
+        <div class="artist">${escapeHtml(song.artist)}${player.isLoading ? ' · loading…' : ''}</div>
       </div>
       <div class="mini-controls" data-stop>
-        <button type="button" class="icon-btn ${liked ? '♥' : '♡'}" data-like="${escapeHtml(song.id)}" title="Like">${liked ? '♥' : '♡'}</button>
+        <button type="button" class="icon-btn ${liked ? 'on' : ''}" data-like="${escapeHtml(song.id)}" title="Like">${liked ? '♥' : '♡'}</button>
         <button type="button" class="ctrl" data-prev aria-label="Previous">⏮</button>
         <button type="button" class="mini-btn" data-toggle aria-label="Play or pause">${playIcon}</button>
         <button type="button" class="ctrl" data-next aria-label="Next">⏭</button>
@@ -533,13 +543,13 @@ function fullPlayerHtml(): string {
   return `
     <div class="full-player skin-${playerSkin}" id="full-player"
       style="--fp-bg:${accent.primary};--fp-accent:${accent.secondary}">
-      <div class="fp-bg" style="background-image:url('${escapeHtml(song.cover)}')"></div>
+      <div class="fp-bg" style="background-image:url('${cssCoverUrl(song.cover)}')"></div>
       <div class="fp-scrim"></div>
       <div class="fp-inner">
         <header class="fp-header">
-          <button type="button" class="icon-btn glass-btn" data-collapse-player aria-label="Close">âœ•</button>
+          <button type="button" class="icon-btn glass-btn" data-collapse-player aria-label="Close">×</button>
           <div class="fp-now">${playerSkin === 'neon' ? 'NOW PLAYING' : playerSkin === 'soft' ? 'Playing' : 'Now playing'}</div>
-          <button type="button" class="icon-btn glass-btn ${liked ? '♥' : '♡'}" data-like="${escapeHtml(song.id)}" aria-label="Like">${liked ? '♥' : '♡'}</button>
+          <button type="button" class="icon-btn glass-btn ${liked ? 'on' : ''}" data-like="${escapeHtml(song.id)}" aria-label="Like">${liked ? '♥' : '♡'}</button>
         </header>
 
         ${artBlock}
@@ -609,7 +619,7 @@ function lyricsPanelHtml(): string {
       <div class="lyrics-panel glass" id="lyrics-panel">
         <div class="lyrics-head">
           <span>Lyrics</span>
-          <span class="lyrics-src">loadingâ€¦</span>
+          <span class="lyrics-src">loading…</span>
         </div>
         <div class="lyrics-body lyrics-center">
           <div class="spinner"></div>
@@ -682,33 +692,35 @@ async function loadLyricsForCurrent(force = false) {
   if (!song) return
   if (!force && lyricsSongId === song.id && (lyricsData || lyricsError)) return
 
+  const gen = ++lyricsGen
   lyricsSongId = song.id
   lyricsLoading = true
   lyricsError = null
   lyricsData = null
   lastSyncedIndex = -1
 
-  // Soft-update panel if full player open
-  const panel = document.getElementById('lyrics-panel')
-  if (panel && playerExpanded) {
-    // re-render only when expanded to show spinner
+  if (playerExpanded) {
     render()
   }
 
   try {
     const durationSec =
       player.duration > 0 ? player.duration : song.durationMs > 0 ? song.durationMs / 1000 : undefined
-    lyricsData = await fetchLyrics({
+    const data = await fetchLyrics({
       artist: song.artist,
       title: song.title,
       album: song.album,
       durationSec,
     })
+    if (gen !== lyricsGen) return
+    lyricsData = data
     lyricsError = null
   } catch (err) {
+    if (gen !== lyricsGen) return
     lyricsData = null
     lyricsError = err instanceof Error ? err.message : 'Lyrics request failed'
   } finally {
+    if (gen !== lyricsGen) return
     lyricsLoading = false
     if (playerExpanded && player.current?.id === song.id) {
       render()
@@ -806,7 +818,10 @@ function render() {
     </div>
   `
   const shell = app.querySelector('.app-shell') as HTMLElement | null
-  if (shell && !playerExpanded) playShellEnter(shell)
+  if (shell && !playerExpanded && !shellEnterPlayed) {
+    shellEnterPlayed = true
+    playShellEnter(shell)
+  }
   bindEvents()
   if (tab === 'library' && librarySection === 'offline') void fillOfflineSection()
 }
@@ -1320,7 +1335,9 @@ player.subscribe(() => {
   const full = document.getElementById('full-player')
 
   if (!player.current) {
-    render()
+    // Soft-clear mini only; avoid full-tree re-render storms
+    const miniEl = document.getElementById('mini')
+    if (miniEl && miniEl.classList.contains('visible')) render()
     return
   }
 
@@ -1332,7 +1349,7 @@ player.subscribe(() => {
     const line = mini.querySelector('.progress-line > span') as HTMLElement | null
     if (title) title.textContent = player.current.title
     if (artist)
-      artist.textContent = `${player.current.artist}${player.isLoading ? ' · loadingâ€¦' : ''}`
+      artist.textContent = `${player.current.artist}${player.isLoading ? ' · loading…' : ''}`
     if (art) {
       art.setAttribute('src', player.current.cover)
       art.classList.toggle('spin', player.isPlaying)
@@ -1367,6 +1384,7 @@ offline.subscribe(() => {
 })
 
 let bootDone = false
+let shellEnterPlayed = false
 
 async function startApp() {
   if (!bootDone) {
