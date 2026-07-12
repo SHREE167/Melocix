@@ -1,17 +1,26 @@
 /**
- * Lightweight motion helpers (Web Animations API).
- * No React required — works with Melocix vanilla UI.
+ * Melocix motion — Web Animations API
+ * Smooth entrances, heart burst, staggered lists.
  */
+
+const EASE_OUT = 'cubic-bezier(0.22, 1, 0.36, 1)'
 
 function wa(
   el: Element,
   keyframes: Keyframe[],
   options: KeyframeAnimationOptions,
 ): Promise<void> {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    return Promise.resolve()
+  }
   return new Promise((resolve) => {
     const anim = el.animate(keyframes, { ...options, fill: 'both' })
     anim.onfinish = () => {
-      anim.commitStyles()
+      try {
+        anim.commitStyles()
+      } catch {
+        /* ignore */
+      }
       anim.cancel()
       resolve()
     }
@@ -24,7 +33,7 @@ export async function playBootAnimation(root: HTMLElement) {
   const splash = document.createElement('div')
   splash.className = 'boot-splash'
   splash.innerHTML = `
-    <div class="boot-mark" aria-hidden="true">♪</div>
+    <div class="boot-mark" aria-hidden="true">\u266A</div>
     <div class="boot-name">Melocix</div>
   `
   root.appendChild(splash)
@@ -35,25 +44,25 @@ export async function playBootAnimation(root: HTMLElement) {
   await wa(
     mark,
     [
-      { transform: 'scale(0.4) rotate(-12deg)', opacity: 0 },
-      { transform: 'scale(1.08) rotate(0deg)', opacity: 1, offset: 0.7 },
+      { transform: 'scale(0.35) rotate(-14deg)', opacity: 0 },
+      { transform: 'scale(1.1) rotate(0deg)', opacity: 1, offset: 0.72 },
       { transform: 'scale(1) rotate(0deg)', opacity: 1 },
     ],
-    { duration: 650, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' },
+    { duration: 700, easing: EASE_OUT },
   )
 
   await wa(
     name,
     [
-      { opacity: 0, transform: 'translateY(12px)' },
-      { opacity: 1, transform: 'translateY(0)' },
+      { opacity: 0, transform: 'translateY(14px)', letterSpacing: '0.2em' },
+      { opacity: 1, transform: 'translateY(0)', letterSpacing: '0.06em' },
     ],
-    { duration: 400, easing: 'ease-out' },
+    { duration: 420, easing: 'ease-out' },
   )
 
   await wa(splash, [{ opacity: 1 }, { opacity: 0 }], {
-    duration: 350,
-    delay: 150,
+    duration: 320,
+    delay: 120,
     easing: 'ease-in',
   })
 
@@ -65,10 +74,10 @@ export function playShellEnter(shell: HTMLElement) {
   void wa(
     shell,
     [
-      { opacity: 0, transform: 'translateY(16px)' },
-      { opacity: 1, transform: 'translateY(0)' },
+      { opacity: 0, transform: 'translateY(18px) scale(0.985)' },
+      { opacity: 1, transform: 'translateY(0) scale(1)' },
     ],
-    { duration: 450, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' },
+    { duration: 480, easing: EASE_OUT },
   )
 }
 
@@ -77,28 +86,27 @@ export function playOnboardEnter(card: HTMLElement) {
   void wa(
     card,
     [
-      { opacity: 0, transform: 'translateY(28px) scale(0.96)' },
+      { opacity: 0, transform: 'translateY(32px) scale(0.95)' },
       { opacity: 1, transform: 'translateY(0) scale(1)' },
     ],
-    { duration: 500, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' },
+    { duration: 520, easing: EASE_OUT },
   )
 }
 
 /**
  * Heart pop when liking a song.
- * @param liked whether the song is liked after the toggle
  */
 export function playHeartBurst(btn: HTMLElement, liked: boolean) {
   void wa(
     btn,
     [
       { transform: 'scale(1)' },
-      { transform: 'scale(1.45)' },
-      { transform: 'scale(0.9)' },
-      { transform: 'scale(1.1)' },
+      { transform: 'scale(1.4)' },
+      { transform: 'scale(0.92)' },
+      { transform: 'scale(1.12)' },
       { transform: 'scale(1)' },
     ],
-    { duration: 450, easing: 'ease-out' },
+    { duration: 420, easing: EASE_OUT },
   )
 
   if (!liked) return
@@ -110,7 +118,7 @@ export function playHeartBurst(btn: HTMLElement, liked: boolean) {
   host.style.top = `${rect.top + rect.height / 2}px`
   document.body.appendChild(host)
 
-  const glyphs = ['♥', '❤', '♡', '✦', '♥', '❤']
+  const glyphs = ['\u2665', '\u2764', '\u2661', '\u2726', '\u2665', '\u2764']
   for (let i = 0; i < 6; i++) {
     const p = document.createElement('span')
     p.className = 'heart-particle'
@@ -118,24 +126,24 @@ export function playHeartBurst(btn: HTMLElement, liked: boolean) {
     host.appendChild(p)
 
     const angle = (Math.PI * 2 * i) / 6 - Math.PI / 2
-    const dist = 28 + Math.random() * 24
+    const dist = 30 + Math.random() * 22
     const x = Math.cos(angle) * dist
-    const y = Math.sin(angle) * dist - 10
+    const y = Math.sin(angle) * dist - 12
 
     void wa(
       p,
       [
-        { transform: 'translate(-50%, -50%) scale(0.6)', opacity: 1 },
+        { transform: 'translate(-50%, -50%) scale(0.5)', opacity: 1 },
         {
           transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) scale(1.15)`,
           opacity: 0,
         },
       ],
-      { duration: 550 + Math.random() * 150, delay: i * 20, easing: 'ease-out' },
+      { duration: 560 + Math.random() * 140, delay: i * 18, easing: 'ease-out' },
     )
   }
 
-  window.setTimeout(() => host.remove(), 750)
+  window.setTimeout(() => host.remove(), 760)
 }
 
 /** Stagger language chips when language step appears */
@@ -145,10 +153,10 @@ export function playLangGridEnter(grid: HTMLElement) {
     void wa(
       el,
       [
-        { opacity: 0, transform: 'translateY(10px)' },
+        { opacity: 0, transform: 'translateY(12px)' },
         { opacity: 1, transform: 'translateY(0)' },
       ],
-      { duration: 350, delay: i * 30, easing: 'ease-out' },
+      { duration: 340, delay: i * 28, easing: EASE_OUT },
     )
   })
 }

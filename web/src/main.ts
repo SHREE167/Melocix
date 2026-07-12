@@ -83,13 +83,14 @@ let lyricsGen = 0
 const app = document.querySelector<HTMLDivElement>('#app')!
 
 function applyTheme() {
-  document.body.classList.remove('theme-light', 'theme-black')
+  document.body.classList.remove('theme-light', 'theme-black', 'theme-dark')
   if (theme === 'light') document.body.classList.add('theme-light')
-  if (theme === 'black') document.body.classList.add('theme-black')
+  else if (theme === 'black') document.body.classList.add('theme-black')
+  else document.body.classList.add('theme-dark')
   localStorage.setItem(THEME_KEY, theme)
-  document.documentElement.style.setProperty('--accent', accent.primary)
-  document.documentElement.style.setProperty('--accent-2', accent.secondary)
+  // Brand accents stay theme-driven; cover palette only tints full-player CSS vars
   document.body.dataset.playerSkin = playerSkin
+  document.documentElement.style.setProperty('--fp-accent-dynamic', accent.secondary)
 }
 
 function escapeHtml(s: string): string {

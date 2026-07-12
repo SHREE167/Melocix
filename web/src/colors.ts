@@ -6,11 +6,12 @@ export async function extractPalette(imageUrl: string): Promise<{
   secondary: string
   text: string
 }> {
-  const fallback = {
-    primary: '#8b5cf6',
-    secondary: '#22d3ee',
-    text: '#f4f4f8',
-  }
+  // Theme-aligned fallbacks: dark red / light blue handled by CSS primarily
+  const isLight =
+    typeof document !== 'undefined' && document.body.classList.contains('theme-light')
+  const fallback = isLight
+    ? { primary: '#2563eb', secondary: '#60a5fa', text: '#0f172a' }
+    : { primary: '#e11d48', secondary: '#fb7185', text: '#fafafa' }
 
   try {
     const img = await loadImage(imageUrl)

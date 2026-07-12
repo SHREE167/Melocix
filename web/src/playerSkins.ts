@@ -22,21 +22,21 @@ export const PLAYER_SKINS: PlayerSkin[] = [
     name: 'Glass Vinyl',
     tagline: 'Frosted panels, spinning disc, blurred cover',
     inspiredBy: 'Glassmorphism dashboard players',
-    preview: 'linear-gradient(145deg, #1c1c28 0%, #6d28d9 55%, #22d3ee 100%)',
+    preview: 'linear-gradient(145deg, #0a0a0a 0%, #e11d48 55%, #fb7185 100%)',
   },
   {
     id: 'neon',
     name: 'Neon Wave',
     tagline: 'Bold card, color-reactive glow, wave seek',
     inspiredBy: 'Dynamic color-extracting media players',
-    preview: 'linear-gradient(135deg, #0a0a12 0%, #ff2d95 45%, #00f0ff 100%)',
+    preview: 'linear-gradient(135deg, #050505 0%, #be123c 40%, #2563eb 100%)',
   },
   {
     id: 'soft',
     name: 'Soft Pulse',
     tagline: 'Soft UI, pill controls, calm tactile feel',
     inspiredBy: 'Soft UI / neumorphic music players',
-    preview: 'linear-gradient(160deg, #2a2a38 0%, #4c1d95 40%, #a78bfa 100%)',
+    preview: 'linear-gradient(160deg, #111 0%, #9f1239 45%, #f43f5e 100%)',
   },
 ]
 
