@@ -1,0 +1,31 @@
+{
+  "name": "melocix-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -k -n api,web -c magenta,cyan \"npm run server\" \"npm run web:delayed\"",
+    "web": "vite --host --open",
+    "web:delayed": "node -e \"setTimeout(()=>process.exit(0),1500)\" && vite --host --open",
+    "server": "node server/index.mjs",
+    "build": "tsc && vite build",
+    "preview": "vite preview --host",
+    "android:sync": "npm run build && npx cap sync android",
+    "android:open": "npx cap open android"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "concurrently": "^10.0.3",
+    "typescript": "~6.0.2",
+    "vite": "^8.1.1"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.4.1",
+    "@capacitor/cli": "^8.4.1",
+    "@capacitor/core": "^8.4.1",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "youtubei.js": "^17.2.0"
+  }
+}

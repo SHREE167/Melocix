@@ -1,0 +1,46 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build outputs
+dist/
+**/dist/
+**/build/
+app/build/
+**/intermediates/
+**/.gradle/
+local.properties
+*.apk
+*.aab
+*.dex
+*.class
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Env / secrets
+.env
+.env.*
+*.keystore
+!**/debug.keystore
+
+# Logs / caches
+*.log
+.turbo/
+.cache/
+.kotlin/
+
+# Capacitor generated (optional keep android later)
+# android/
+
+# Temp fix scripts
+web/fix-encoding.mjs
+web/fix-more.mjs
+
+web/fix-*.py
+web/fix-*.mjs
+
